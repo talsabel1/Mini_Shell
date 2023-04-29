@@ -208,11 +208,13 @@ int prepare(void) {
     signal_handler(SIGINT);
 
     // handle SIG_CHLD
-
+    return 0;
 }
 
 
-int finalize(void) {}
+int finalize(void) {
+    return 0;
+}
 
 void signal_handler(int signal_number) {
     /*
