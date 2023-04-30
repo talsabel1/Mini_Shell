@@ -253,6 +253,11 @@ int finalize(void) {
 
 /* Signal Handling - restores SIGINT and SIGCHLD to default response --------------------------------------------------*/
 void restore_default_signals() {
+    /*
+     * I used this link as a reference to assist in understanding how to write the code for signal handling:
+     * https://www.gnu.org/software/libc/manual/html_node/Sigaction-Function-Example.html
+     */
+
     struct sigaction new_action_sigint, new_action_sigchld;
 
     new_action_sigint.sa_handler = SIG_DFL;
