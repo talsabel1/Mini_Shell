@@ -1,9 +1,9 @@
 # Mini Shell
 A mini project that can handle and execute shell commands including:
 - Regular Commands
-- Processes running in background - '&'
-- Single pipes - '|'
-- Single input redirect - '<'
+- Processes running in background '&'
+- Single pipes '|'
+- Single input redirect '<'
 
 The shell also handles the desired response for SIGINT and SIGCHLD signals for each type of process, cleans up zombies and handles various errors (errors in a child process will not stop the execution of the parent shell).
 
