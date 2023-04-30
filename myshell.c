@@ -21,7 +21,7 @@ int prepare(void);
 int finalize(void);
 void error(const char *type);
 void signal_handler(int signal_number);
-void default_signal();
+void restore_default_signal();
 //void sigchld_handler(int signal);
 
 int process_arglist(int count, char **arglist) {
@@ -36,14 +36,12 @@ int process_arglist(int count, char **arglist) {
                 return 0;
             }
             break;
-        }
-        else if (strcmp(curr, INPUT_REDIRECT) == 0) {
+        } else if (strcmp(curr, INPUT_REDIRECT) == 0) {
             if (redirect(count, arglist) == -1) {
                 return 0;
             }
             break;
-        }
-        else if (strcmp(curr, RUN_IN_BACKGROUND) == 0) {
+        } else if (strcmp(curr, RUN_IN_BACKGROUND) == 0) {
             if (background(count, arglist) == -1) {
                 return 0;
             }
@@ -65,7 +63,7 @@ int regular_execution(int count, char **arglist) {
 
     pid = fork();
     if (pid == 0) {   // child process
-        default_signal();
+        restore_default_signal();
         if (execvp(arglist[0], arglist) == -1){
             error("execvp");
             exit(1);
@@ -94,7 +92,7 @@ int my_pipe(int count, char **arglist, int pipe_index){
     else {
         pid_1 = fork();
         if (pid_1 == 0) {    // 1st child process (to write to pipe)
-            default_signal();
+            restore_default_signal();
             close(pipefd[0]);
             if (dup2(pipefd[1], STDOUT_FILENO) == -1) {
                 error("dup2");
@@ -110,7 +108,7 @@ int my_pipe(int count, char **arglist, int pipe_index){
         else if (pid_1 > 0) {      // parent process
             pid_2 = fork(); // maybe take this outside of else if so it runs at same time as first fork()
             if (pid_2 == 0) { // 2nd child process (to read from pipe)
-                default_signal();
+                restore_default_signal();
                 close(pipefd[1]);
                 if(dup2(pipefd[0], STDIN_FILENO) == -1){
                     error("dup2");
@@ -165,7 +163,7 @@ int redirect(int count, char **arglist){
     else {
         pid = fork();
         if (pid == 0) {    // child process
-            default_signal();
+            restore_default_signal();
             if (dup2(fd, STDIN_FILENO) == -1) {
                 error("dup2");
                 exit(1);
@@ -177,7 +175,7 @@ int redirect(int count, char **arglist){
                 exit(1);
             }
         } else if (pid > 0) {      // parent process
-            if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            if((waitpid(, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
                 error("wait");
                 return -1;
             }
@@ -194,6 +192,10 @@ int background(int count, char **arglist) {
 
     pid = fork();
     if (pid == 0) {    // child process
+        if (signal(SIGCHLD, SIG_DFL) == SIG_ERR) {
+            error("signal");
+            exit(1);
+        }
         arglist[count-1] = NULL; // remove & to send to execvp
         if (execvp(arglist[0], arglist) == -1) {
             error("execvp");
@@ -209,10 +211,9 @@ int background(int count, char **arglist) {
 }
 
 int prepare(void) {
-//    signal_handler(SIGCHLD);
+    signal_handler(SIGCHLD);
     signal_handler(SIGINT);
 
-    // handle SIG_CHLD
     return 0;
 }
 
@@ -239,16 +240,16 @@ void signal_handler(int signal_number) {
         }
     }
 
-//    else if (signal_number == SIGCHLD) {
-//        // add fields for new_action
-//        new_action.sa_handler = sigchld_handler;
-//        sigemptyset (&new_action.sa_mask);
-//        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-//        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
-//            error("signal");
-//            exit(1);
-//        }
-//    }
+    else if (signal_number == SIGCHLD) {
+        // add fields for new_action
+        new_action.sa_handler = SIG_IGN;
+        sigemptyset (&new_action.sa_mask);
+        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
+            error("signal");
+            exit(1);
+        }
+    }
 }
 
 //void sigchld_handler(int signal) {
@@ -256,13 +257,22 @@ void signal_handler(int signal_number) {
 //
 //    while ((waitpid(-1, &status, WNOHANG)) > 0);
 //}
-void default_signal() {
-    struct sigaction new_action;
 
-    new_action.sa_handler = SIG_DFL;
-    sigemptyset (&new_action.sa_mask);
-    new_action.sa_flags = SA_RESTART;
-    if (sigaction(SIGINT, &new_action, NULL) == -1) {
+void restore_default_signal() {
+    struct sigaction new_action_sigint, new_action_sigchld;
+
+    new_action_sigint.sa_handler = SIG_DFL;
+    sigemptyset (&new_action_sigint.sa_mask);
+    new_action_sigint.sa_flags = SA_RESTART;
+    if (sigaction(SIGINT, &new_action_sigint, NULL) == -1) {
+        error("signal");
+        exit(1);
+    }
+
+    new_action_sigchld.sa_handler = SIG_DFL;
+    sigemptyset (&new_action_sigchld.sa_mask);
+    new_action_sigint.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &new_action_sigchld, NULL) == -1) {
         error("signal");
         exit(1);
     }
