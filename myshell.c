@@ -22,6 +22,7 @@ int finalize(void);
 void error(const char *type);
 void signal_handler(int signal_number);
 void default_signal();
+void sigchld_handler(int signal);
 
 int process_arglist(int count, char **arglist) {
     int i;
@@ -154,7 +155,7 @@ int redirect(int count, char **arglist){
     pid_t pid;
     int fd;
 
-    if ((fd = open(arglist[count-1], O_WRONLY | O_CREAT, 0644)) == -1) {
+    if ((fd = open(arglist[count-1], O_RDONLY, 0644)) == -1) {
         error("file");
         return -1;
     }
@@ -162,10 +163,11 @@ int redirect(int count, char **arglist){
         pid = fork();
         if (pid == 0) {    // child process
             default_signal();
-            if (dup2(fd, STDOUT_FILENO) == -1) {
+            if (dup2(fd, STDIN_FILENO) == -1) {
                 error("dup2");
                 exit(1);
             }
+            close(fd);
             arglist[count-2] = NULL; // so we can send arglist to execvp w/o < and filename
             if (execvp(arglist[0], arglist) == -1){
                 error("execvp");
@@ -234,18 +236,25 @@ void signal_handler(int signal_number) {
         }
     }
 
-//    else if (signal_number == SIGCHLD) {
-//        // add fields for new_action
-//        new_action.sa_handler;
-//        sigemptyset (&new_action.sa_mask);
-//        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-//        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
-//            error("signal");
-//            exit(1);
-//        }
-//    }
+    else if (signal_number == SIGCHLD) {
+        // add fields for new_action
+        new_action.sa_handler = sigchld_handler;
+        sigemptyset (&new_action.sa_mask);
+        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
+            error("signal");
+            exit(1);
+        }
+    }
 }
 
+void sigchld_handler(int signal) {
+    int status;
+
+    while ((waitpid(-1, &status, WNOHANG)) > 0) {
+        // Clean up
+    }
+}
 void default_signal() {
     struct sigaction new_action;
 
