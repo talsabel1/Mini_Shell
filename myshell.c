@@ -67,12 +67,14 @@ int process_arglist(int count, char **arglist) {
                 return 0;
             }
             break;
-        } else if (strcmp(curr, INPUT_REDIRECT) == 0) {
+        }
+        else if (strcmp(curr, INPUT_REDIRECT) == 0) {
             if (redirect(count, arglist) == -1) {
                 return 0;
             }
             break;
-        } else if (strcmp(curr, RUN_IN_BACKGROUND) == 0) {
+        }
+        else if (strcmp(curr, RUN_IN_BACKGROUND) == 0) {
             if (background(count, arglist) == -1) {
                 return 0;
             }
@@ -134,7 +136,7 @@ int my_pipe(char **arglist, int pipe_index){
                 exit(1);
             }
             close(pipefd[1]);
-            arglist[pipe_index] = NULL;
+            arglist[pipe_index] = NULL; // ensure that we are not passing the '|' character to execvp()
             if(execvp(arglist[0], arglist) == -1){
                 error("execvp");
                 exit(1);
@@ -172,7 +174,6 @@ int my_pipe(char **arglist, int pipe_index){
                 perror("(Second fork)");
                 close(pipefd[0]);
                 close(pipefd[1]);
-                // kill fork 1 ?
                 return -1;
             }
         }
@@ -205,7 +206,7 @@ int redirect(int count, char **arglist){
             exit(1);
         }
         close(fd);
-        arglist[count-2] = NULL;
+        arglist[count-2] = NULL;     // ensure that we are not passing the '<' character to execvp()
         if (execvp(arglist[0], arglist) == -1){
             error("execvp");
             exit(1);
@@ -230,11 +231,11 @@ int background(int count, char **arglist) {
 
     pid = fork();
     if (pid == 0) {    // child process
-        if (signal(SIGCHLD, SIG_DFL) == SIG_ERR) {
+        if (signal(SIGCHLD, SIG_DFL) == SIG_ERR) {      // return SIGCHLD to default response
             error("signal");
             exit(1);
         }
-        arglist[count-1] = NULL;
+        arglist[count-1] = NULL;     // ensure that we are not passing the '&' character to execvp()
         if (execvp(arglist[0], arglist) == -1) {
             error("execvp");
             exit(1);
