@@ -157,34 +157,33 @@ int redirect(int count, char **arglist){
     pid_t pid;
     int fd;
 
-    if ((fd = open(arglist[count-1], O_RDONLY, 0644)) == -1) {
-        error("file");
-        return -1;
-    }
-    else {
-        pid = fork();
-        if (pid == 0) {    // child process
-            restore_default_signal();
-            if (dup2(fd, STDIN_FILENO) == -1) {
-                error("dup2");
-                exit(1);
-            }
-            close(fd);
-            arglist[count-2] = NULL; // so we can send arglist to execvp w/o < and filename
-            if (execvp(arglist[0], arglist) == -1){
-                error("execvp");
-                exit(1);
-            }
-        } else if (pid > 0) {      // parent process
-            if((waitpid(pid, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) {
-                error("wait");
-                return -1;
-            }
-        } else {     // fork failed
-            error("fork");
+    pid = fork();
+    if (pid == 0) {    // child process
+        restore_default_signal();
+        if ((fd = open(arglist[count-1], O_RDONLY, 0644)) == -1) {
+            error("file");
+            exit(1);
+        }
+        if (dup2(fd, STDIN_FILENO) == -1) {
+            error("dup2");
+            exit(1);
+        }
+        close(fd);
+        arglist[count-2] = NULL; // so we can send arglist to execvp w/o < and filename
+        if (execvp(arglist[0], arglist) == -1){
+            error("execvp");
+            exit(1);
+        }
+    } else if (pid > 0) {      // parent process
+        if((waitpid(pid, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            error("wait");
             return -1;
         }
+    } else {     // fork failed
+        error("fork");
+        return -1;
     }
+
     return 1;
 }
 
