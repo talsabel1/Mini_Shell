@@ -175,7 +175,7 @@ int redirect(int count, char **arglist){
                 exit(1);
             }
         } else if (pid > 0) {      // parent process
-            if((waitpid(, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
                 error("wait");
                 return -1;
             }
