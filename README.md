@@ -1,6 +1,6 @@
 # Mini Shell
 A mini project that acts as a shell and can perform the following operations:
-- Executing Commands
+- Executing commands
 - Executing commands in the background '&'
 - Single piping '|'
 - Input redirecting '<'
