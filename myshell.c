@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #define PIPE "|"
 #define RUN_IN_BACKGROUND "&"
