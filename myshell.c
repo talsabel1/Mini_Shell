@@ -24,7 +24,8 @@ void error(const char *type);
 void restore_default_signals();
 /*---------------------------------------------------------------------------------------------------------------------*/
 
-/* Set up function, defines SIGINT and SIGCHLD responses --------------------------------------------------------------*/
+/* Set up function, defines SIGINT and SIGCHLD responses --------------------------------------------------------------
+ * Returns 0 on success -----------------------------------------------------------------------------------------------*/
 int prepare(void) {
     /*
      * I used this link as a reference to assist in understanding how to write the code for signal handling:
@@ -246,7 +247,8 @@ int background(int count, char **arglist) {
     return 1;
 }
 
-/* Clean up function --------------------------------------------------------------------------------------------------*/
+/* Clean up function --------------------------------------------------------------------------------------------------
+ * Returns 0 on success -----------------------------------------------------------------------------------------------*/
 int finalize(void) {
     return 0;
 }
