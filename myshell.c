@@ -69,7 +69,7 @@ int regular_execution(int count, char **arglist) {
             exit(1);
         }
     } else if (pid > 0) {   // parent process
-        if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
+        if((waitpid(pid, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
             error("wait");
             return -1;
         }
@@ -175,7 +175,7 @@ int redirect(int count, char **arglist){
                 exit(1);
             }
         } else if (pid > 0) {      // parent process
-            if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            if((waitpid(pid, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
                 error("wait");
                 return -1;
             }
