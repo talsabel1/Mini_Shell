@@ -22,7 +22,7 @@ int finalize(void);
 void error(const char *type);
 void signal_handler(int signal_number);
 void default_signal();
-void sigchld_handler(int signal);
+//void sigchld_handler(int signal);
 
 int process_arglist(int count, char **arglist) {
     int i;
@@ -71,7 +71,7 @@ int regular_execution(int count, char **arglist) {
             exit(1);
         }
     } else if (pid > 0) {   // parent process
-        if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
+        if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
             error("wait");
             return -1;
         }
@@ -125,7 +125,11 @@ int my_pipe(int count, char **arglist, int pipe_index){
             else if (pid_2 > 0) {
                 close(pipefd[0]);
                 close(pipefd[1]);
-                if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) {
+                if((waitpid(pid_1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
+                    error("wait");
+                    return -1;
+                }
+                if((waitpid(pid_2, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
                     error("wait");
                     return -1;
                 }
@@ -148,7 +152,6 @@ int my_pipe(int count, char **arglist, int pipe_index){
         }
     }
     return 1;
-    // close opened read/ write pipes in children
 }
 
 int redirect(int count, char **arglist){
@@ -174,7 +177,7 @@ int redirect(int count, char **arglist){
                 exit(1);
             }
         } else if (pid > 0) {      // parent process
-            if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            if((waitpid(-1, NULL, WNOHANG) == -1) && !(errno == ECHILD || errno == EINTR)) {
                 error("wait");
                 return -1;
             }
@@ -236,25 +239,23 @@ void signal_handler(int signal_number) {
         }
     }
 
-    else if (signal_number == SIGCHLD) {
-        // add fields for new_action
-        new_action.sa_handler = sigchld_handler;
-        sigemptyset (&new_action.sa_mask);
-        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
-            error("signal");
-            exit(1);
-        }
-    }
+//    else if (signal_number == SIGCHLD) {
+//        // add fields for new_action
+//        new_action.sa_handler = sigchld_handler;
+//        sigemptyset (&new_action.sa_mask);
+//        new_action.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+//        if (sigaction(SIGCHLD, &new_action, NULL) == -1) {
+//            error("signal");
+//            exit(1);
+//        }
+//    }
 }
 
-void sigchld_handler(int signal) {
-    int status;
-
-    while ((waitpid(-1, &status, WNOHANG)) > 0) {
-        // Clean up
-    }
-}
+//void sigchld_handler(int signal) {
+//    int status;
+//
+//    while ((waitpid(-1, &status, WNOHANG)) > 0);
+//}
 void default_signal() {
     struct sigaction new_action;
 
