@@ -70,7 +70,7 @@ int regular_execution(int count, char **arglist) {
             exit(1);
         }
     } else if (pid > 0) {   // parent process
-        if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
+        if((waitpid(pid, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) { // coverage for EINTR is handled by SA_RESTART in sigaction so this check is just an extra precaution
             error("wait");
             return -1;
         }
@@ -124,11 +124,11 @@ int my_pipe(int count, char **arglist, int pipe_index){
             else if (pid_2 > 0) {
                 close(pipefd[0]);
                 close(pipefd[1]);
-                if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) {
+                if((waitpid(pid_1, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) {
                     error("wait");
                     return -1;
                 }
-                if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) {
+                if((waitpid(pid_2, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) {
                     error("wait");
                     return -1;
                 }
@@ -176,7 +176,7 @@ int redirect(int count, char **arglist){
                 exit(1);
             }
         } else if (pid > 0) {      // parent process
-            if((wait(NULL) == -1) && !(errno == ECHILD || errno == EINTR)) {
+            if((waitpid(pid, NULL, WUNTRACED) == -1) && !(errno == ECHILD || errno == EINTR)) {
                 error("wait");
                 return -1;
             }
